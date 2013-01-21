@@ -21,6 +21,7 @@ import termcolor as T
 import sys
 import os
 import math
+import pprint
 
 # TODO: Don't just read the TODO sections in this code.  Remember that
 # one of the goals of this assignment is for you to learn how to use
@@ -74,13 +75,22 @@ class BBTopo(Topo):
         super(BBTopo, self).__init__()
 
         # TODO: create two hosts
-
+	host1 = self.addHost('h1')
+	host2 = self.addHost('h2')
+	
         # Here I have created a switch.  If you change its name, its
         # interface names will change from s0-eth1 to newname-eth1.
-        self.addSwitch('s0')
+	switch0 = self.addSwitch('s0')
 
         # TODO: Add links with appropriate characteristics
-        return
+        # h1 is local fast link
+        # h2 is remote slow link
+        _delay = '%fms' % args.delay
+        self.addLink(host1, switch0, 
+                     bw=args.bw_host, delay=_delay, max_queue_size=args.maxq)
+	self.addLink(host2, switch0, 
+                     bw=args.bw_net, delay=_delay, max_queue_size=args.maxq)
+	return
 
 # Simple wrappers around monitoring utilities.  You are welcome to
 # contribute neatly written (using classes) monitoring scripts for
@@ -93,7 +103,7 @@ def start_tcpprobe(outfile="cwnd.txt"):
 def stop_tcpprobe():
     Popen("killall -9 cat", shell=True).wait()
 
-def start_qmon(iface, interval_sec=0.1, outfile="q.txt"):
+def start_qmon(iface, interval_sec=0.1, outfile='%s/q.txt' % (args.dir)):
     monitor = Process(target=monitor_qlen,
                       args=(iface, interval_sec, outfile))
     monitor.start()
@@ -108,6 +118,9 @@ def start_iperf(net):
     server = h2.popen("iperf -s -w 16m")
     # TODO: Start the iperf client on h1.  Ensure that you create a
     # long lived TCP flow.
+    h1 = net.getNodeByName('h1')
+    client = h1.popen("iperf -c %s:5001" % h2.IP())
+    
 
 def start_webserver(net):
     h1 = net.getNodeByName('h1')
@@ -123,6 +136,12 @@ def start_ping(net):
     # Hint: Use host.popen(cmd, shell=True).  If you pass shell=True
     # to popen, you can redirect cmd's output using shell syntax.
     # i.e. ping ... > /path/to/ping.
+    
+    h1 = net.getNodeByName('h1');
+    h2 = net.getNodeByName('h2');
+    h1.popen('ping -i .1 %s > %s/ping.txt' % (h2.IP(), args.dir), shell=True)
+    
+    return
 
 
 def bufferbloat():
@@ -150,7 +169,9 @@ def bufferbloat():
                       outfile='%s/q.txt' % (args.dir))
 
     # TODO: Start iperf, webservers, etc.
-    # start_iperf(net)
+    start_iperf(net)
+    start_ping(net)
+    start_webserver(net)
 
     # TODO: measure the time it takes to complete webpage transfer
     # from h1 to h2 (say) 3 times.  Hint: check what the following
