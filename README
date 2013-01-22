@@ -1,0 +1,26 @@
+Results
+
+q20
+AVERAGE: 3.04457
+STD DEV: 4.94224
+
+q100
+AVERAGE: 21.37632
+STD DEV: 11.88578
+
+
+Questions
+
+1.
+The larger buffer means that there is a longer line in the router that gets cached with older requests.  Since the buffer is a FIFO queue, this means that when a new web request comes in, it has to wait a longer time for the buffer to clear.  With a short buffer, the line is shorter, so when a new request arrives, it doesn't have to wait as long for the queue.  
+
+2.
+My queue length is 1000, and the MTU is 1500, so the total queue size is 1.5 Mb. That means that with a drain of 100Mb/s, (1.5 Mb) / (100 Mb/s) = ( .015 s) is the maximum time the packet can wait.  
+
+3.
+RTT = base delay or RTT of just the links + (queue size / slowest link speed)
+
+4.
+One way to mitigate the bufferbloat problem, as we've seen here, is to reduce the size of the buffer.  That way the time any packet spends in the router is minimized.  
+
+Another way to mitigate the bufferbloat problem is to endevour to identify different types of traffic.  Some traffic can be labeled as low latency, but don't allow much bandwidth on it.  Other traffic can be labelled as less latency dependent, and then you can allow it to be higher bandwidth.  

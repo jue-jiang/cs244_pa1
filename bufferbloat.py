@@ -119,7 +119,7 @@ def start_iperf(net):
     # TODO: Start the iperf client on h1.  Ensure that you create a
     # long lived TCP flow.
     h1 = net.getNodeByName('h1')
-    client = h1.popen("iperf -c %s:5001" % h2.IP())
+    client = h1.popen("iperf -t %d -c %s" % (args.time, h2.IP()))
     
 
 def start_webserver(net):
@@ -143,6 +143,10 @@ def start_ping(net):
     
     return
 
+def curl_webserver(net, outfile):
+    h1 = net.getNodeByName('h1')
+    h2 = net.getNodeByName('h2')
+    h2.popen("curl -o /dev/null -s -w %%{time_total} %s/http/index.html > %s/%s" % (h1.IP(), args.dir, outfile), shell=True)
 
 def bufferbloat():
     if not os.path.exists(args.dir):
@@ -182,8 +186,11 @@ def bufferbloat():
     # Hint: have a separate function to do this and you may find the
     # loop below useful.
     start_time = time()
+    measure_i = 0
     while True:
         # do the measurement (say) 3 times.
+        curl_webserver(net, 'curl_%d.txt' % measure_i)
+        measure_i = measure_i + 1;
         sleep(5)
         now = time()
         delta = now - start_time
@@ -194,6 +201,30 @@ def bufferbloat():
     # TODO: compute average (and standard deviation) of the fetch
     # times.  You don't need to plot them.  Just note it in your
     # README and explain.
+    
+    curl_sum = 0
+    curl_times = []
+    curl_count = 0
+    for i in range(0, 40):
+        curl_file = open('%s/curl_%d.txt' % (args.dir, i),'r')
+        curl_time = curl_file.readline();
+        if (curl_time):
+            curl_sum += float(curl_time)
+            curl_times.append(curl_time)
+            curl_count += 1
+
+    curl_avg = curl_sum / curl_count
+    print "\nAVERAGE: "
+    print curl_avg
+    
+    curl_sd = 0
+    for i in curl_times:
+        curl_sd += (curl_avg - float(i))**2
+    curl_sd /= curl_count
+    curl_sd = math.sqrt(curl_sd)
+
+    print "\nSTD DEV: "
+    print curl_sd
 
     # Hint: The command below invokes a CLI which you can use to
     # debug.  It allows you to run arbitrary commands inside your
